@@ -1,7 +1,15 @@
+/* 
+Kyle Hudson
+2026
+Live laugh love
+*/
+
 #include <IRremote.h>
 #include <LiquidCrystal.h>
 #include <RTClib.h>
+#include "pitches.h"  // to send notes to buzzer, not my code
 #include "buttons.h"  // you may need to modify the button signal to match your remote
+#include "alarm_song.h"
 
 int RECV_PIN = 2;  // set reciever pin
 
@@ -60,24 +68,22 @@ void checkAlarm() {
 
   DateTime now = rtc.now();
   if (now.hour() == alarmHour && now.minute() == alarmMin && now.second() == 0) {  // Trigger buzzer when time matches
-    digitalWrite(BUZZER_PIN, HIGH);                                                // Turn buzzer on
+    playAlarm();                                                                   // Play the song instead of a continuous buzz                                               // Turn buzzer on
   }
 }
 
 void setup() {
   Serial.begin(9600);                        // Start serial monitor for debugging
   analogWrite(LCD_CONTRAST, contrastValue);  // Set initial contrast
-  analogWrite(LCD_BACKLIGHT, 255);
-  / Set backlight to full brightness
-      lcd.begin(16, 2);           // Initialize LCD as 16 columns, 2 rows
-  rtc.begin();                    // Initialize the RTC module
-  pinMode(BUZZER_PIN, OUTPUT);    // Set buzzer pin as an output
-  digitalWrite(BUZZER_PIN, LOW);  // Ensure buzzer is off at startup
-  irrecv.enableIRIn();            // Start listening for IR signals
-
-  lcd.setCursor(0, 0);
-  lcd.print("Time:");  // Initial label on the first line
-  displayAlarm();      // Show alarm status on the second line
+  analogWrite(LCD_BACKLIGHT, 255);           // Set backlight to full brightness
+  lcd.begin(16, 2);                          // Initialize LCD as 16 columns, 2 rows
+  rtc.begin();                               // Initialize the RTC module
+  pinMode(BUZZER_PIN, OUTPUT);               // Set buzzer pin as an output
+  digitalWrite(BUZZER_PIN, LOW);             // Ensure buzzer is off at startup
+  irrecv.enableIRIn();                       // Start listening for IR signals
+  lcd.setCursor(0, 0);                       // Initial label on the first line
+  lcd.print("Time:");                        // Show time
+  displayAlarm();                            // Show alarm status on the second line
 }
 
 void loop() {
@@ -92,8 +98,7 @@ void loop() {
       Serial.println(button);                        // Print button name
 
       if (button == "STOP") {  // Stop the buzzer and cancel the alarm
-        digitalWrite(BUZZER_PIN, LOW);
-        alarmSet = false;  // Reset alarm
+        alarmSet = false;      // Reset alarm
         displayAlarm();
 
       } else if (!settingTime && !settingAlarm && button == "EQ") {  // Enter time-setting mode
@@ -154,7 +159,7 @@ void loop() {
           displayAlarm();
         }
 
-      } else if (!settingTime && !settingAlarm && button == "BACK") { // Cancel a scheduled alarm
+      } else if (!settingTime && !settingAlarm && button == "BACK") {  // Cancel a scheduled alarm
         digitalWrite(BUZZER_PIN, LOW);
         alarmSet = false;
         displayAlarm();
@@ -168,6 +173,6 @@ void loop() {
         analogWrite(LCD_CONTRAST, contrastValue);
       }
     }
-    irrecv.resume(); // Ready the IR receiver
+    irrecv.resume();  // Ready the IR receiver
   }
 }
