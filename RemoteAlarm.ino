@@ -1,72 +1,46 @@
 #include <IRremote.h>
 #include <LiquidCrystal.h>
 #include <RTClib.h>
+#include "buttons.h"  // you may need to modify the button signal to match your remote
 
-int RECV_PIN = 2;
+int RECV_PIN = 2;  // set reciever pin
 
-IRrecv irrecv(RECV_PIN);
-decode_results results;
+IRrecv irrecv(RECV_PIN);  // Create IR receiver object on the defined pin
+decode_results results;   // Stores the decoded result from the IR receiver
 
-LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
+LiquidCrystal lcd(7, 8, 9, 10, 11, 12);  // let lcd pins
 
-const int LCD_CONTRAST = 6;
-int contrastValue = 100;
+const int LCD_CONTRAST = 6;   // set contrast pin
+const int LCD_BACKLIGHT = 3;  // set backlight pin
+const int BUZZER_PIN = 5;     // set buzzer pin
 
-const int LCD_BACKLIGHT = 3;
-int backlightValue = 255;  // 0 = off, 255 = full brightness
+int contrastValue = 100;  // set initial contrast value
 
-const int BUZZER_PIN = 5;
+RTC_DS3231 rtc;  // Create RTC object to interact with the time module
 
-RTC_DS3231 rtc;
-
-bool settingTime = false;
+bool settingTime = false;  // Flags to track whether the user is currently entering a time or alarm
 bool settingAlarm = false;
-String inputDigits = "";
+String inputDigits = "";  // Stores the digits typed in by the user during input
 
-int alarmHour = -1;
+int alarmHour = -1;  // Stores the set alarm time (-1 means no alarm set)
 int alarmMin = -1;
-bool alarmSet = false;
+bool alarmSet = false;  // Tracks whether an alarm is currently scheduled
 
-String getButtonName(unsigned long code) {
-  switch (code) {
-    case 0xFF6897: return "0";
-    case 0xFF30CF: return "1";
-    case 0xFF18E7: return "2";
-    case 0xFF7A85: return "3";
-    case 0xFF10EF: return "4";
-    case 0xFF38C7: return "5";
-    case 0xFF5AA5: return "6";
-    case 0xFF42BD: return "7";
-    case 0xFF4AB5: return "8";
-    case 0xFF52AD: return "9";
-    case 0xFFA857: return "VOL-";
-    case 0xFF629D: return "VOL+";
-    case 0xFF02FD: return "PLAY";
-    case 0xFFA25D: return "PWR";
-    case 0xFFE21D: return "STOP";
-    case 0xFFE01F: return "DOWN";
-    case 0xFF906F: return "UP";
-    case 0xFF9867: return "EQ";
-    case 0xFFC23D: return "FWD";
-    case 0xFF22DD: return "BACK";
-    case 0xFFB04F: return "REPT";
-    default: return "UNKNOWN";
-  }
-}
-
+// Reads the current time from the RTC and prints it to the top line of the LCD
 void displayTime() {
-  DateTime now = rtc.now();
+  DateTime now = rtc.now();  // Get the current date and time
 
-  lcd.setCursor(0, 0);
-  if (now.hour() < 10) lcd.print("0");
+  lcd.setCursor(0, 0);                  // Move cursor to start of first line
+  if (now.hour() < 10) lcd.print("0");  // Pad single digit hours with a leading zero
   lcd.print(now.hour());
   lcd.print(":");
   if (now.minute() < 10) lcd.print("0");
   lcd.print(now.minute());
 }
 
+// Prints the alarm status
 void displayAlarm() {
-  lcd.setCursor(0, 1);
+  lcd.setCursor(0, 1);  // Move cursor to start of second line
   if (alarmSet) {
     lcd.print("Alarm: ");
     if (alarmHour < 10) lcd.print("0");
@@ -74,53 +48,55 @@ void displayAlarm() {
     lcd.print(":");
     if (alarmMin < 10) lcd.print("0");
     lcd.print(alarmMin);
-    lcd.print("  ");
+    lcd.print("  ");  // Trailing spaces to overwrite any leftover characters
   } else {
-    lcd.print("No Alarm        ");
+    lcd.print("No Alarm        ");  // Padded to clear the full line
   }
 }
 
+// Checks if the current time matches the alarm time and triggers the buzzer
 void checkAlarm() {
-  if (!alarmSet) return;
+  if (!alarmSet) return;  // Skip check if no alarm is scheduled
 
   DateTime now = rtc.now();
-  if (now.hour() == alarmHour && now.minute() == alarmMin && now.second() == 0) {
-    digitalWrite(BUZZER_PIN, HIGH);
+  if (now.hour() == alarmHour && now.minute() == alarmMin && now.second() == 0) {  // Trigger buzzer when time matches
+    digitalWrite(BUZZER_PIN, HIGH);                                                // Turn buzzer on
   }
 }
 
 void setup() {
-  Serial.begin(9600);
-  analogWrite(LCD_CONTRAST, contrastValue);
-  analogWrite(LCD_BACKLIGHT, backlightValue);
-  lcd.begin(16, 2);
-  rtc.begin();
-  pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(BUZZER_PIN, LOW);
-  irrecv.enableIRIn();
+  Serial.begin(9600);                        // Start serial monitor for debugging
+  analogWrite(LCD_CONTRAST, contrastValue);  // Set initial contrast
+  analogWrite(LCD_BACKLIGHT, 255);
+  / Set backlight to full brightness
+      lcd.begin(16, 2);           // Initialize LCD as 16 columns, 2 rows
+  rtc.begin();                    // Initialize the RTC module
+  pinMode(BUZZER_PIN, OUTPUT);    // Set buzzer pin as an output
+  digitalWrite(BUZZER_PIN, LOW);  // Ensure buzzer is off at startup
+  irrecv.enableIRIn();            // Start listening for IR signals
 
   lcd.setCursor(0, 0);
-  lcd.print("Time:");
-  displayAlarm();
+  lcd.print("Time:");  // Initial label on the first line
+  displayAlarm();      // Show alarm status on the second line
 }
 
 void loop() {
-  if (!settingTime && !settingAlarm) {
+  if (!settingTime && !settingAlarm) {  // Continuously update the time and check the alarm when not in a setting mode
     displayTime();
     checkAlarm();
   }
 
-  if (irrecv.decode(&results)) {
-    if (results.value != 0xFFFFFFFF) {
-      String button = getButtonName(results.value);
-      Serial.println(button);
+  if (irrecv.decode(&results)) {                     // Check if an IR signal has been received
+    if (results.value != 0xFFFFFFFF) {               // Ignore repeat/held button signals
+      String button = getButtonName(results.value);  // Convert hex code to button name
+      Serial.println(button);                        // Print button name
 
-      if (button == "STOP") {
+      if (button == "STOP") {  // Stop the buzzer and cancel the alarm
         digitalWrite(BUZZER_PIN, LOW);
-        alarmSet = false;
+        alarmSet = false;  // Reset alarm
         displayAlarm();
 
-      } else if (!settingTime && !settingAlarm && button == "EQ") {
+      } else if (!settingTime && !settingAlarm && button == "EQ") {  // Enter time-setting mode
         settingTime = true;
         inputDigits = "";
         lcd.clear();
@@ -128,7 +104,7 @@ void loop() {
         lcd.print("Enter HHMM:");
         lcd.setCursor(0, 1);
 
-      } else if (!settingTime && !settingAlarm && button == "PLAY") {
+      } else if (!settingTime && !settingAlarm && button == "PLAY") {  // Enter alarm-setting mode
         settingAlarm = true;
         inputDigits = "";
         lcd.clear();
@@ -136,24 +112,23 @@ void loop() {
         lcd.print("Alarm HHMM:");
         lcd.setCursor(0, 1);
 
-
-      } else if ((settingTime || settingAlarm) && button.length() == 1 && isDigit(button[0])) {
-        inputDigits += button;
-        lcd.print(button);
+      } else if ((settingTime || settingAlarm) && button.length() == 1 && isDigit(button[0])) {  // Handle digit input while in setting mode
+        inputDigits += button;                                                                   // String of buttons
+        lcd.print(button);                                                                       // Show the digit on the LCD as it's typed
 
         if (inputDigits.length() == 4) {
-          int newHour = inputDigits.substring(0, 2).toInt();
-          int newMin = inputDigits.substring(2, 4).toInt();
+          int newHour = inputDigits.substring(0, 2).toInt();  // First 2 digits = hour
+          int newMin = inputDigits.substring(2, 4).toInt();   // Last 2 digits = minute
 
-          if (newHour < 24 && newMin < 60) {
+          if (newHour < 24 && newMin < 60) {  // Validate the entered time
             if (settingTime) {
-              DateTime now = rtc.now();
+              DateTime now = rtc.now();  // Update the RTC with the new time
               rtc.adjust(DateTime(now.year(), now.month(), now.day(), newHour, newMin, 0));
               lcd.clear();
               lcd.setCursor(0, 0);
               lcd.print("Time set!");
               delay(1500);
-            } else if (settingAlarm) {
+            } else if (settingAlarm) {  // Save the alarm time
               alarmHour = newHour;
               alarmMin = newMin;
               alarmSet = true;
@@ -163,14 +138,14 @@ void loop() {
               delay(1500);
             }
 
-          } else {
+          } else {  // Invalid fallback
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print("Invalid time!");
             delay(1500);
           }
 
-          lcd.clear();
+          lcd.clear();  // Return to normal display after setting
           lcd.setCursor(0, 0);
           lcd.print("Time:");
           settingTime = false;
@@ -178,7 +153,8 @@ void loop() {
           inputDigits = "";
           displayAlarm();
         }
-      } else if (!settingTime && !settingAlarm && button == "BACK") {
+
+      } else if (!settingTime && !settingAlarm && button == "BACK") { // Cancel a scheduled alarm
         digitalWrite(BUZZER_PIN, LOW);
         alarmSet = false;
         displayAlarm();
@@ -186,18 +162,12 @@ void loop() {
       } else if (button == "UP") {  // to change contrast
         contrastValue = constrain(contrastValue - 10, 0, 255);
         analogWrite(LCD_CONTRAST, contrastValue);
+
       } else if (button == "DOWN") {
         contrastValue = constrain(contrastValue + 10, 0, 255);
         analogWrite(LCD_CONTRAST, contrastValue);
-
-      } else if (button == "VOL+") {  // to change brightness
-        backlightValue = constrain(backlightValue + 10, 0, 255);
-        analogWrite(LCD_BACKLIGHT, backlightValue);
-      } else if (button == "VOL-") {
-        backlightValue = constrain(backlightValue - 10, 0, 255);
-        analogWrite(LCD_BACKLIGHT, backlightValue);
       }
     }
-    irrecv.resume();
+    irrecv.resume(); // Ready the IR receiver
   }
 }
