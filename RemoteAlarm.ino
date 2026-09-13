@@ -19,10 +19,9 @@ decode_results results;   // Stores the decoded result from the IR receiver
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);  // let lcd pins
 
 const int LCD_CONTRAST = 6;   // set contrast pin
-const int LCD_BACKLIGHT = 3;  // set backlight pin
 const int BUZZER_PIN = 5;     // set buzzer pin
 
-int contrastValue = 100;  // set initial contrast value
+int contrastValue = 60;  // set initial contrast value
 
 RTC_DS3231 rtc;  // Create RTC object to interact with the time module
 
@@ -75,7 +74,6 @@ void checkAlarm() {
 void setup() {
   Serial.begin(9600);                        // Start serial monitor for debugging
   analogWrite(LCD_CONTRAST, contrastValue);  // Set initial contrast
-  analogWrite(LCD_BACKLIGHT, 255);           // Set backlight to full brightness
   lcd.begin(16, 2);                          // Initialize LCD as 16 columns, 2 rows
   rtc.begin();                               // Initialize the RTC module
   pinMode(BUZZER_PIN, OUTPUT);               // Set buzzer pin as an output
