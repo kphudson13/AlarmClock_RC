@@ -14,7 +14,7 @@ void buzzTone(int pin, int frequency, int duration) {
     delay(duration);
     return;
   }
-  long period = 1000000L / frequency; // Period in microseconds
+  long period = 1000000L / frequency;  // Period in microseconds
   long cycles = (long)frequency * duration / 1000;
   for (long i = 0; i < cycles; i++) {
     digitalWrite(pin, HIGH);
@@ -67,23 +67,24 @@ void playAlarm() {
   };
 
   int size = sizeof(durations) / sizeof(int);
-  for (int note = 0; note < size; note++) {
-
-    // Check for STOP button before each note
-    if (irrecv.decode(&results)) {
-      if (getButtonName(results.value) == "STOP") {
-        digitalWrite(BUZZER_PIN, LOW);
-        alarmSet = false;
+  for (int repeat = 0; repeat < 10; repeat++) {  // Play the alarm up to 10 times
+    for (int note = 0; note < size; note++) {
+      if (irrecv.decode(&results)) {                   // Check for button press before each note
+        String button = getButtonName(results.value);  // get button name
+        if (button == "STOP" || button == "PWR" || button == "PLAY") {
+          digitalWrite(BUZZER_PIN, LOW);
+          alarmSet = false;
+          irrecv.resume();
+          return;
+        }
         irrecv.resume();
-        return;
       }
-      irrecv.resume();
+
+      int duration = 1000 / durations[note];
+      buzzTone(BUZZER_PIN, melody[note], duration);
+      delay(duration * 0.30);  // Pause between notes
     }
-
-    int duration = 1000 / durations[note];
-    buzzTone(BUZZER_PIN, melody[note], duration);
-    delay(duration * 0.30); // Pause between notes
   }
+  digitalWrite(BUZZER_PIN, LOW);  // Turn buzzer off after 10 repetitions
 }
-
 #endif

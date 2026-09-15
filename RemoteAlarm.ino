@@ -20,8 +20,10 @@ LiquidCrystal lcd(7, 8, 9, 10, 11, 12);  // let lcd pins
 
 const int LCD_CONTRAST = 6;   // set contrast pin
 const int BUZZER_PIN = 5;     // set buzzer pin
+const int BACKLIGHT_PIN = 3;  // set LCD backlight pin
 
-int contrastValue = 60;  // set initial contrast value
+bool backlightOn = true;  // Track backlight state
+int contrastValue = 60;   // set initial contrast value
 
 RTC_DS3231 rtc;  // Create RTC object to interact with the time module
 
@@ -72,7 +74,9 @@ void checkAlarm() {
 }
 
 void setup() {
-  Serial.begin(9600);                        // Start serial monitor for debugging
+  Serial.begin(9600);  // Start serial monitor for debugging
+  pinMode(BACKLIGHT_PIN, OUTPUT);
+  digitalWrite(BACKLIGHT_PIN, HIGH);         // Backlight on at startup
   analogWrite(LCD_CONTRAST, contrastValue);  // Set initial contrast
   lcd.begin(16, 2);                          // Initialize LCD as 16 columns, 2 rows
   rtc.begin();                               // Initialize the RTC module
@@ -114,6 +118,10 @@ void loop() {
         lcd.setCursor(0, 0);
         lcd.print("Alarm HHMM:");
         lcd.setCursor(0, 1);
+
+      } else if (button == "PWR") {
+        backlightOn = !backlightOn;
+        digitalWrite(BACKLIGHT_PIN, backlightOn ? HIGH : LOW);
 
       } else if ((settingTime || settingAlarm) && button.length() == 1 && isDigit(button[0])) {  // Handle digit input while in setting mode
         inputDigits += button;                                                                   // String of buttons
