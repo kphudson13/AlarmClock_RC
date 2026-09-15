@@ -66,10 +66,12 @@ void displayAlarm() {
 // Checks if the current time matches the alarm time and triggers the buzzer
 void checkAlarm() {
   if (!alarmSet) return;  // Skip check if no alarm is scheduled
-
   DateTime now = rtc.now();
+
   if (now.hour() == alarmHour && now.minute() == alarmMin && now.second() == 0) {  // Trigger buzzer when time matches
-    playAlarm();                                                                   // Play the song instead of a continuous buzz                                               // Turn buzzer on
+    backlightOn = true;                                                            // Turn LCD backlight on when alarm starts
+    digitalWrite(BACKLIGHT_PIN, HIGH);
+    playAlarm();  // See alarm_song.h
   }
 }
 
