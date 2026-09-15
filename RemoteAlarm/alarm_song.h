@@ -1,3 +1,10 @@
+/*
+Seperate funcions to play alarm song
+Kyle Hudson
+CIRCA 2026
+Live laugh love
+*/
+
 #ifndef ALARM_SONG_H
 #define ALARM_SONG_H
 

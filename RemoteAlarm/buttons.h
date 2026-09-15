@@ -1,3 +1,10 @@
+/*
+Map remote frequencies to buttons 
+Kyle Hudson
+CIRCA 2026
+Live laugh love
+*/
+
 #ifndef BUTTONS_H
 #define BUTTONS_H
 
