@@ -192,6 +192,49 @@ const int simpsonsDurations[] PROGMEM = {
   2, 2
 };
 
+
+const int pinkpantherMelody[] PROGMEM = {
+  REST, REST, REST, NOTE_DS4, 
+  NOTE_E4, REST, NOTE_FS4, NOTE_G4, REST, NOTE_DS4,
+  NOTE_E4, NOTE_FS4,  NOTE_G4, NOTE_C5, NOTE_B4, NOTE_E4, NOTE_G4, NOTE_B4,   
+  NOTE_AS4, NOTE_A4, NOTE_G4, NOTE_E4, NOTE_D4, 
+  NOTE_E4, REST, REST, NOTE_DS4,
+  
+  NOTE_E4, REST, NOTE_FS4, NOTE_G4, REST, NOTE_DS4,
+  NOTE_E4, NOTE_FS4,  NOTE_G4, NOTE_C5, NOTE_B4, NOTE_G4, NOTE_B4, NOTE_E5,
+  NOTE_DS5,   
+  NOTE_D5, REST, REST, NOTE_DS4, 
+  NOTE_E4, REST, NOTE_FS4, NOTE_G4, REST, NOTE_DS4,
+  NOTE_E4, NOTE_FS4,  NOTE_G4, NOTE_C5, NOTE_B4, NOTE_E4, NOTE_G4, NOTE_B4,   
+  
+  NOTE_AS4, NOTE_A4, NOTE_G4, NOTE_E4, NOTE_D4, 
+  NOTE_E4, REST,
+  REST, NOTE_E5, NOTE_D5, NOTE_B4, NOTE_A4, NOTE_G4, NOTE_E4,
+  NOTE_AS4, NOTE_A4, NOTE_AS4, NOTE_A4, NOTE_AS4, NOTE_A4, NOTE_AS4, NOTE_A4,   
+  NOTE_G4, NOTE_E4, NOTE_D4, NOTE_E4, NOTE_E4, NOTE_E4
+};
+
+const int pinkpantherDurations[] PROGMEM = {
+  2, 4, 8, 8, 
+  4, 8, 8, 4, 8, 8,
+  8, 8,  8, 8, 8, 8, 8, 8,   
+  2, 16, 16, 16, 16, 
+  2, 4, 8, 4,
+  
+  4, 8, 8, 4, 8, 8,
+  8, 8,  8, 8, 8, 8, 8, 8,
+  1,   
+  2, 4, 8, 8, 
+  4, 8, 8, 4, 8, 8,
+  8, 8,  8, 8, 8, 8, 8, 8,   
+  
+  2, 16, 16, 16, 16, 
+  4, 4,
+  4, 8, 8, 8, 8, 8, 8,
+  16, 8, 16, 8, 16, 8, 16, 8,   
+  16, 16, 16, 16, 16, 2
+};
+
 const int marioMelody[] PROGMEM = {
   NOTE_E5, NOTE_E5, REST, NOTE_E5, REST, NOTE_C5, NOTE_E5,
   NOTE_G5, REST, NOTE_G4, REST,
@@ -245,6 +288,25 @@ const int marioDurations[] PROGMEM = {
   8, 4, 8, 2
 };
 
+const int pacmanMelody[] PROGMEM = {
+  NOTE_B4, NOTE_B5, NOTE_FS5, NOTE_DS5,
+  NOTE_B5, NOTE_FS5, NOTE_DS5, NOTE_C5,
+  NOTE_C6, NOTE_G6, NOTE_E6, NOTE_C6, NOTE_G6, NOTE_E6,
+  
+  NOTE_B4, NOTE_B5, NOTE_FS5, NOTE_DS5, NOTE_B5,
+  NOTE_FS5, NOTE_DS5, NOTE_DS5, NOTE_E5, NOTE_F5,
+  NOTE_F5, NOTE_FS5, NOTE_G5, NOTE_G5, NOTE_GS5, NOTE_A5, NOTE_B5
+};
+
+const int pacmanDurations[] PROGMEM = {
+  16, 16, 16, 16,
+  32, 16, 8, 16,
+  16, 16, 16, 32, 16, 8,
+  
+  16, 16, 16, 16, 32,
+  16, 8, 32, 32, 32,
+  32, 32, 32, 32, 32, 16, 8
+};
 
 // Reading songs back requires a wrapper
 int readMelody(const int* arr, int i) {
@@ -267,7 +329,9 @@ Song songs[] = {
   { "Harry Potter", harrypotterMelody, harrypotterDurations, sizeof(harrypotterDurations) / sizeof(int) },
   { "Pirates", piratesMelody, piratesDurations, sizeof(piratesDurations) / sizeof(int) },
   { "Simpsons", simpsonsMelody, simpsonsDurations, sizeof(simpsonsDurations) / sizeof(int) },
-  { "Mario", marioMelody, marioDurations, sizeof(marioDurations) / sizeof(int) }
+  { "Pink Panther", pinkpantherMelody, pinkpantherDurations, sizeof(pinkpantherDurations) / sizeof(int) },
+  { "Mario", marioMelody, marioDurations, sizeof(marioDurations) / sizeof(int) },
+  { "Pac-Man", pacmanMelody, pacmanDurations, sizeof(pacmanDurations) / sizeof(int) }
 };
 
 const int NUM_SONGS = sizeof(songs) / sizeof(Song);
