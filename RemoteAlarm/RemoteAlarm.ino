@@ -23,17 +23,22 @@ const int BUZZER_PIN = 5;     // set buzzer pin
 const int BACKLIGHT_PIN = 3;  // set LCD backlight pin
 
 bool backlightOn = true;  // Track backlight state
-int contrastValue = 60;   // set initial contrast value
+int contrastValue = 60;   // set initial contrast value 
 
 RTC_DS3231 rtc;  // Create RTC object to interact with the time module
 
-bool settingTime = false;  // Flags to track whether the user is currently entering a time or alarm
+bool selectingSong = false;  // add with your other flags at the top
+bool settingTime = false;    // Flags to track whether the user is currently entering a time or alarm
 bool settingAlarm = false;
 String inputDigits = "";  // Stores the digits typed in by the user during input
 
 int alarmHour = -1;  // Stores the set alarm time (-1 means no alarm set)
 int alarmMin = -1;
 bool alarmSet = false;  // Tracks whether an alarm is currently scheduled
+
+extern int selectedSong;
+extern Song songs[];
+extern const int NUM_SONGS;
 
 // Reads the current time from the RTC and prints it to the top line of the LCD
 void displayTime() {
@@ -77,21 +82,21 @@ void checkAlarm() {
 
 void setup() {
   Serial.begin(9600);  // Start serial monitor for debugging
+  lcd.begin(16, 2);                          // Initialize LCD as 16 columns, 2 rows
   pinMode(BACKLIGHT_PIN, OUTPUT);
   digitalWrite(BACKLIGHT_PIN, HIGH);         // Backlight on at startup
   analogWrite(LCD_CONTRAST, contrastValue);  // Set initial contrast
-  lcd.begin(16, 2);                          // Initialize LCD as 16 columns, 2 rows
   rtc.begin();                               // Initialize the RTC module
   pinMode(BUZZER_PIN, OUTPUT);               // Set buzzer pin as an output
   digitalWrite(BUZZER_PIN, LOW);             // Ensure buzzer is off at startup
   irrecv.enableIRIn();                       // Start listening for IR signals
   lcd.setCursor(0, 0);                       // Initial label on the first line
-  lcd.print("Time:");                        // Show time
+  lcd.print("Time?");                        // This will get overwritten is time is found
   displayAlarm();                            // Show alarm status on the second line
 }
 
 void loop() {
-  if (!settingTime && !settingAlarm) {  // Continuously update the time and check the alarm when not in a setting mode
+  if (!settingTime && !settingAlarm && !selectingSong) {  // Continuously update the time and check the alarm when not in a setting mode
     displayTime();
     checkAlarm();
   }
@@ -99,13 +104,13 @@ void loop() {
   if (irrecv.decode(&results)) {                     // Check if an IR signal has been received
     if (results.value != 0xFFFFFFFF) {               // Ignore repeat/held button signals
       String button = getButtonName(results.value);  // Convert hex code to button name
-      Serial.println(button);                        // Print button name
+      Serial.println(button);                        // Print button name in serial for debugging
 
-      if (button == "STOP") {  // Stop the buzzer and cancel the alarm
+      if (button == "STOP") {  // Cancel the alarm
         alarmSet = false;      // Reset alarm
         displayAlarm();
 
-      } else if (!settingTime && !settingAlarm && button == "EQ") {  // Enter time-setting mode
+      } else if (!settingTime && !settingAlarm && !selectingSong && button == "EQ") {  // Enter time-setting mode
         settingTime = true;
         inputDigits = "";
         lcd.clear();
@@ -113,7 +118,7 @@ void loop() {
         lcd.print("Enter HHMM:");
         lcd.setCursor(0, 1);
 
-      } else if (!settingTime && !settingAlarm && button == "PLAY") {  // Enter alarm-setting mode
+      } else if (!settingTime && !settingAlarm && !selectingSong && button == "PLAY") {  // Enter alarm-setting mode
         settingAlarm = true;
         inputDigits = "";
         lcd.clear();
@@ -121,9 +126,17 @@ void loop() {
         lcd.print("Alarm HHMM:");
         lcd.setCursor(0, 1);
 
-      } else if (button == "PWR") {
-        backlightOn = !backlightOn;
-        digitalWrite(BACKLIGHT_PIN, backlightOn ? HIGH : LOW);
+
+
+      } else if ((settingTime || settingAlarm) && button == "BACK") {
+        if (inputDigits.length() > 0) {
+          inputDigits.remove(inputDigits.length() - 1);
+          lcd.setCursor(0, 1);
+          lcd.print("                ");  // clear the line
+          lcd.setCursor(0, 1);
+          lcd.print(inputDigits);  // reprint without the last digit
+        }
+
 
       } else if ((settingTime || settingAlarm) && button.length() == 1 && isDigit(button[0])) {  // Handle digit input while in setting mode
         inputDigits += button;                                                                   // String of buttons
@@ -141,6 +154,7 @@ void loop() {
               lcd.setCursor(0, 0);
               lcd.print("Time set!");
               delay(1500);
+
             } else if (settingAlarm) {  // Save the alarm time
               alarmHour = newHour;
               alarmMin = newMin;
@@ -160,17 +174,11 @@ void loop() {
 
           lcd.clear();  // Return to normal display after setting
           lcd.setCursor(0, 0);
-          lcd.print("Time:");
           settingTime = false;
           settingAlarm = false;
-          inputDigits = "";
+          inputDigits = ""; // clear digits
           displayAlarm();
         }
-
-      } else if (!settingTime && !settingAlarm && button == "BACK") {  // Cancel a scheduled alarm
-        digitalWrite(BUZZER_PIN, LOW);
-        alarmSet = false;
-        displayAlarm();
 
       } else if (button == "UP") {  // to change contrast
         contrastValue = constrain(contrastValue - 10, 0, 255);
@@ -179,6 +187,42 @@ void loop() {
       } else if (button == "DOWN") {
         contrastValue = constrain(contrastValue + 10, 0, 255);
         analogWrite(LCD_CONTRAST, contrastValue);
+
+      } else if (button == "PWR") { // turn on/off backlight
+        backlightOn = !backlightOn;
+        digitalWrite(BACKLIGHT_PIN, backlightOn ? HIGH : LOW);
+
+      } else if (!settingTime && !settingAlarm && !selectingSong && button == "REPT") { // to enter song selection mode
+        selectingSong = true;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Alarm Song:");
+        lcd.setCursor(0, 1);
+        lcd.print(songs[selectedSong].name);
+
+      } else if (selectingSong && button == "FWD") { // go to next song
+        selectedSong = (selectedSong + 1) % NUM_SONGS;  // wrap around
+        lcd.setCursor(0, 1);
+        lcd.print("                ");  // clear line
+        lcd.setCursor(0, 1);
+        lcd.print(songs[selectedSong].name);
+
+      } else if (selectingSong && button == "BACK") {
+        selectedSong = (selectedSong - 1 + NUM_SONGS) % NUM_SONGS;  // wrap around
+        lcd.setCursor(0, 1);
+        lcd.print("                ");
+        lcd.setCursor(0, 1);
+        lcd.print(songs[selectedSong].name);
+
+      } else if (selectingSong && button == "STOP" || button == "PLAY" || button == "REPT") { // to select a song
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print(songs[selectedSong].name);
+        delay(2100);
+        selectingSong = false;
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        displayAlarm();
       }
     }
     irrecv.resume();  // Ready the IR receiver
